@@ -42,14 +42,14 @@
 
  @par API Usage Example
   The following code shows typical usage of this library, see example test_i2cmaster.c
-
+*/
  @code
 
  #include <i2cmaster.h>
 
 
  #define Dev24C02  0xA2      // device address of EEPROM 24C02, see datasheet
-*/
+
  int main(void)
  {
      unsigned char ret;
