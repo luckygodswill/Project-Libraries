@@ -1,177 +1,63 @@
-#ifndef _I2CMASTER_H
-#define _I2CMASTER_H   1
-/************************************************************************* 
-* Title:    C include file for the I2C master interface 
-*           (i2cmaster.S or twimaster.c)
-* Author:   Peter Fleury <pfleury@gmx.ch>  http://jump.to/fleury
-* File:     $Id: i2cmaster.h,v 1.10 2005/03/06 22:39:57 Peter Exp $
-* Software: AVR-GCC 3.4.3 / avr-libc 1.2.3
-* Target:   any AVR device
-* Usage:    see Doxygen manual
-**************************************************************************/
-
-#ifdef DOXYGEN
-/**
- @defgroup pfleury_ic2master I2C Master library
- @code #include <i2cmaster.h> @endcode
-  
- @brief I2C (TWI) Master Software Library
-
- Basic routines for communicating with I2C slave devices. This single master 
- implementation is limited to one bus master on the I2C bus. 
-
- This I2c library is implemented as a compact assembler software implementation of the I2C protocol 
- which runs on any AVR (i2cmaster.S) and as a TWI hardware interface for all AVR with built-in TWI hardware (twimaster.c).
- Since the API for these two implementations is exactly the same, an application can be linked either against the
- software I2C implementation or the hardware I2C implementation.
-
- Use 4.7k pull-up resistor on the SDA and SCL pin.
- 
- Adapt the SCL and SDA port and pin definitions and eventually the delay routine in the module 
- i2cmaster.S to your target when using the software I2C implementation ! 
- 
- Adjust the  CPU clock frequence F_CPU in twimaster.c or in the Makfile when using the TWI hardware implementaion.
-
- @note 
-    The module i2cmaster.S is based on the Atmel Application Note AVR300, corrected and adapted 
-    to GNU assembler and AVR-GCC C call interface.
-    Replaced the incorrect quarter period delays found in AVR300 with 
-    half period delays. 
-    
- @author Peter Fleury pfleury@gmx.ch  http://jump.to/fleury
-
- @par API Usage Example
-  The following code shows typical usage of this library, see example test_i2cmaster.c
-*/
- @code
-
- #include <i2cmaster.h>
+/*************************************************** 
+  This is a library for the MLX90614 Temp Sensor
+  Designed specifically to work with the MLX90614 sensors in the
+  adafruit shop
+  ----> https://www.adafruit.com/products/1748
+  ----> https://www.adafruit.com/products/1749
+  These sensors use I2C to communicate, 2 pins are required to  
+  interface
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+  Written by Limor Fried/Ladyada for Adafruied in any redistribution
+ ****************************************************/
 
 
- #define Dev24C02  0xA2      // device address of EEPROM 24C02, see datasheet
-
- int main(void)
- {
-     unsigned char ret;
-
-     i2c_init();                             // initialize I2C library
-
-     // write 0x75 to EEPROM address 5 (Byte Write) 
-     i2c_start_wait(Dev24C02+I2C_WRITE);     // set device address and write mode
-     i2c_write(0x05);                        // write address = 5
-     i2c_write(0x75);                        // write value 0x75 to EEPROM
-     i2c_stop();                             // set stop conditon = release bus
-
-
-     // read previously written value back from EEPROM address 5 
-     i2c_start_wait(Dev24C02+I2C_WRITE);     // set device address and write mode
-
-     i2c_write(0x05);                        // write address = 5
-     i2c_rep_start(Dev24C02+I2C_READ);       // set device address and read mode
-
-     ret = i2c_readNak();                    // read one byte from EEPROM
-     i2c_stop();
-
-     for(;;);
- }
- @endcode
-
-
-#endif /* DOXYGEN */
-
-/**@{*/
-
-#if (__GNUC__ * 100 + __GNUC_MINOR__) < 304
-#error "This library requires AVR-GCC 3.4 or later, update to newer AVR-GCC compiler !"
+#if (ARDUINO >= 100)
+ #include "Arduino.h"
+#else
+ #include "WProgram.h"
 #endif
-
-//#include <avr/io.h>
-
-/** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_READ    1
-
-/** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_WRITE   0
+#include "Wire.h"
 
 
-/**
- @brief initialize the I2C master interace. Need to be called only once 
- @param  void
- @return none
- */
-extern void i2c_init(void);
+#define MLX90614_I2CADDR 0x5A
+
+// RAM
+#define MLX90614_RAWIR1 0x04
+#define MLX90614_RAWIR2 0x05
+#define MLX90614_TA 0x06
+#define MLX90614_TOBJ1 0x07
+#define MLX90614_TOBJ2 0x08
+// EEPROM
+#define MLX90614_TOMAX 0x20
+#define MLX90614_TOMIN 0x21
+#define MLX90614_PWMCTRL 0x22
+#define MLX90614_TARANGE 0x23
+#define MLX90614_EMISS 0x24
+#define MLX90614_CONFIG 0x25
+#define MLX90614_ADDR 0x0E
+#define MLX90614_ID1 0x3C
+#define MLX90614_ID2 0x3D
+#define MLX90614_ID3 0x3E
+#define MLX90614_ID4 0x3F
 
 
-/** 
- @brief Terminates the data transfer and releases the I2C bus 
- @param void
- @return none
- */
-extern void i2c_stop(void);
+class Adafruit_MLX90614  {
+ public:
+  Adafruit_MLX90614(uint8_t addr = MLX90614_I2CADDR);
+  boolean begin();
+  uint32_t readID(void);
 
+  double readObjectTempC(void);
+  double readAmbientTempC(void);
+  double readObjectTempF(void);
+  double readAmbientTempF(void);
 
-/** 
- @brief Issues a start condition and sends address and transfer direction 
-  
- @param    addr address and transfer direction of I2C device
- @retval   0   device accessible 
- @retval   1   failed to access device 
- */
-extern unsigned char i2c_start(unsigned char addr);
+ private:
+  float readTemp(uint8_t reg);
 
-
-/**
- @brief Issues a repeated start condition and sends address and transfer direction 
-
- @param   addr address and transfer direction of I2C device
- @retval  0 device accessible
- @retval  1 failed to access device
- */
-extern unsigned char i2c_rep_start(unsigned char addr);
-
-
-/**
- @brief Issues a start condition and sends address and transfer direction 
-   
- If device is busy, use ack polling to wait until device ready 
- @param    addr address and transfer direction of I2C device
- @return   none
- */
-extern void i2c_start_wait(unsigned char addr);
-
- 
-/**
- @brief Send one byte to I2C device
- @param    data  byte to be transfered
- @retval   0 write successful
- @retval   1 write failed
- */
-extern unsigned char i2c_write(unsigned char data);
-
-
-/**
- @brief    read one byte from the I2C device, request more data from device 
- @return   byte read from I2C device
- */
-extern unsigned char i2c_readAck(void);
-
-/**
- @brief    read one byte from the I2C device, read is followed by a stop condition 
- @return   byte read from I2C device
- */
-extern unsigned char i2c_readNak(void);
-
-/** 
- @brief    read one byte from the I2C device
- 
- Implemented as a macro, which calls either i2c_readAck or i2c_readNak
- 
- @param    ack 1 send ack, request more data from device<br>
-               0 send nak, read is followed by a stop condition 
- @return   byte read from I2C device
- */
-extern unsigned char i2c_read(unsigned char ack);
-#define i2c_read(ack)  (ack) ? i2c_readAck() : i2c_readNak(); 
-
-/**@}*/
-#endif
+  uint8_t _addr;
+  uint16_t read16(uint8_t addr);
+  void write16(uint8_t addr, uint16_t data);
+};
