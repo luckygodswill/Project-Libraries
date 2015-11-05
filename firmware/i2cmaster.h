@@ -19,8 +19,8 @@
  #include "Arduino.h"
 #endif
 */
-#include "Wire.h"
-
+//#include "Wire.h"
+#include "OneWire/OneWire.h"
 
 #define MLX90614_I2CADDR 0x5A
 
