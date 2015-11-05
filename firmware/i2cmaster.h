@@ -12,12 +12,13 @@
   Written by Limor Fried/Ladyada for Adafruied in any redistribution
  ****************************************************/
 
-
+/*
 #if (ARDUINO >= 100)
  #include "Arduino.h"
 #else
  #include "Arduino.h"
 #endif
+*/
 #include "Wire.h"
 
 
