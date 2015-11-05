@@ -49,7 +49,7 @@
 
 
  #define Dev24C02  0xA2      // device address of EEPROM 24C02, see datasheet
-
+*/
  int main(void)
  {
      unsigned char ret;
@@ -76,7 +76,7 @@
  }
  @endcode
 
-*/
+
 #endif /* DOXYGEN */
 
 /**@{*/
